@@ -35,6 +35,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             report.Property(r => r.Criticality).HasConversion<string>();
             report.Property(r => r.Status).HasConversion<string>();
             report.HasIndex(r => r.CreatedAt);
+            report.HasOne(r => r.CreatedBy).WithMany().HasForeignKey(r => r.CreatedById);
+            report.HasOne(r => r.ClosedBy).WithMany().HasForeignKey(r => r.ClosedById);
         });
     }
 }

@@ -52,4 +52,15 @@ public class Report
     public DateTime CreatedAt { get; set; }
     public int CreatedById { get; set; }
     public User CreatedBy { get; set; } = null!;
+
+    // RF-18, RF-23
+    public DateTime? ClosedAt { get; set; }
+    public int? ClosedById { get; set; }
+    public User? ClosedBy { get; set; }
+    public string? ClosingAction { get; set; }
+    public string? ClosingNote { get; set; }
+
+    /// <summary>RF-16: únicamente Abierto → En Progreso → Cerrado.</summary>
+    public bool CanMoveTo(ReportStatus next) =>
+        (Status, next) is (ReportStatus.Abierto, ReportStatus.EnProgreso) or (ReportStatus.EnProgreso, ReportStatus.Cerrado);
 }

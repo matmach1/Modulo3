@@ -8,6 +8,7 @@ using Riesgos.Api.Domain;
 namespace Riesgos.Api.Endpoints;
 
 public record CreateReportRequest(string? Description, string? Location, Category? SuggestedCategory);
+public record ChangeStatusRequest(ReportStatus? Status, string? ClosingAction, string? ClosingNote);
 
 public record ReportDto(
     int Id,
@@ -20,13 +21,18 @@ public record ReportDto(
     ReportStatus Status,
     DateTime CreatedAt,
     string CreatedBy,
-    string? Recommendation)
+    string? Recommendation,
+    DateTime? ClosedAt,
+    string? ClosedBy,
+    string? ClosingAction,
+    string? ClosingNote)
 {
     public static ReportDto From(Report r) => new(
         r.Id, r.Description, r.Location, r.SuggestedCategory,
         r.Type, r.Category, r.Criticality, r.Status,
         r.CreatedAt, r.CreatedBy.Email,
-        Recommendations.For(r.Criticality));
+        Recommendations.For(r.Criticality),
+        r.ClosedAt, r.ClosedBy?.Email, r.ClosingAction, r.ClosingNote);
 }
 
 public record PagedResult<T>(IReadOnlyList<T> Items, int Page, int Size, int Total);
@@ -84,13 +90,42 @@ public static class ReportEndpoints
         // RF-31: el creador ve sus reportes; el administrador, cualquiera.
         group.MapGet("/{id:int}", async (int id, ClaimsPrincipal principal, AppDbContext db) =>
         {
-            var report = await db.Reports.Include(r => r.CreatedBy).SingleOrDefaultAsync(r => r.Id == id);
+            var report = await WithUsers(db.Reports).SingleOrDefaultAsync(r => r.Id == id);
             if (report is null)
                 return Results.NotFound();
             if (!CanView(principal, report))
                 return Results.Forbid();
             return Results.Ok(ReportDto.From(report));
         });
+
+        // RF-16, RF-18, RF-23: solo el administrador cambia el estado.
+        group.MapPatch("/{id:int}/status", async (int id, ChangeStatusRequest request, ClaimsPrincipal principal, AppDbContext db) =>
+        {
+            if (request.Status is not { } next)
+                return Results.BadRequest(new { error = "El estado es obligatorio." });
+
+            var report = await WithUsers(db.Reports).SingleOrDefaultAsync(r => r.Id == id);
+            if (report is null)
+                return Results.NotFound();
+            if (!report.CanMoveTo(next))
+                return Results.Conflict(new { error = $"No se puede pasar de {report.Status} a {next}." });
+
+            if (next == ReportStatus.Cerrado)
+            {
+                if (string.IsNullOrWhiteSpace(request.ClosingAction) || string.IsNullOrWhiteSpace(request.ClosingNote))
+                    return Results.BadRequest(new { error = "Para cerrar hay que indicar la acción realizada y la observación de cierre." });
+
+                report.ClosingAction = request.ClosingAction.Trim();
+                report.ClosingNote = request.ClosingNote.Trim();
+                report.ClosedAt = DateTime.UtcNow;
+                report.ClosedById = principal.GetUserId();
+            }
+            report.Status = next;
+            await db.SaveChangesAsync();
+            await db.Entry(report).Reference(r => r.ClosedBy).LoadAsync();
+
+            return Results.Ok(ReportDto.From(report));
+        }).RequireAuthorization(AuthSetup.AdminPolicy);
 
         // RF-03: cada usuario ve solo los reportes que creó.
         group.MapGet("/mine", async (ClaimsPrincipal principal, AppDbContext db) =>
@@ -105,5 +140,8 @@ public static class ReportEndpoints
         principal.IsInRole(nameof(Role.Admin)) || report.CreatedById == principal.GetUserId();
 
     private static IQueryable<Report> NewestFirst(IQueryable<Report> reports) =>
-        reports.Include(r => r.CreatedBy).OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id);
+        WithUsers(reports).OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id);
+
+    private static IQueryable<Report> WithUsers(IQueryable<Report> reports) =>
+        reports.Include(r => r.CreatedBy).Include(r => r.ClosedBy);
 }
