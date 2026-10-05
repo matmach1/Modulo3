@@ -1,7 +1,7 @@
 # PRD-001: Sistema Inteligente de Reporte y Prevención de Riesgos Laborales
 
 ## Contexto y Problema
-En muchas empresas los empleados detectan situaciones peligrosas, pero no saben dónde reportarlas, el reporte demora, se pierden observaciones, no se priorizan los riesgos más críticos, no se tiene una base unificada y no se genera conocimiento para prevenir accidentes.
+En muchas empresas los empleados detectan situaciones peligrosas, pero no saben dónde reportarlas, no hay seguimiento, el reporte demora, se pierden observaciones, no se priorizan los riesgos más críticos, no se tiene una base unificada y no se genera conocimiento para prevenir accidentes.
 
 ## Objetivos
 Diseñar una aplicación web donde cualquier empleado habilitado pueda generar un reporte de: actos inseguros, condiciones inseguras, casi accidentes, riesgos operativos, problemas de infraestructura, etc. Se requiere que el reporte ingresado se clasifique automáticamente en un tipo y además en base a la información ingresada se calcule el nivel de criticidad.
