@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Riesgos.Api.Auth;
+using Riesgos.Api.Classification;
 using Riesgos.Api.Data;
 using Riesgos.Api.Endpoints;
 
@@ -9,13 +10,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>((services, options) =>
     options.UseSqlite(services.GetRequiredService<IConfiguration>().GetConnectionString("Default")));
 builder.Services.AddJwtAuth();
+builder.Services.AddSingleton<IClassifier, ClaudeClassifier>();
+builder.Services.AddScoped<ClassificationService>();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
 
-// Falla al arrancar si falta JWT_KEY, en lugar de fallar en el primer login.
+// Falla al arrancar si falta JWT_KEY o API_KEY, en lugar de fallar en el primer request.
 TokenService.SigningKey(app.Configuration);
+app.Services.GetRequiredService<IClassifier>();
 
 using (var scope = app.Services.CreateScope())
 {
