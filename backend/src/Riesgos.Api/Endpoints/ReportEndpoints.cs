@@ -29,8 +29,12 @@ public record ReportDto(
         Recommendations.For(r.Criticality));
 }
 
+public record PagedResult<T>(IReadOnlyList<T> Items, int Page, int Size, int Total);
+
 public static class ReportEndpoints
 {
+    public const int MaxPageSize = 100;
+
     public static void MapReportEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/reports").RequireAuthorization();
@@ -62,5 +66,30 @@ public static class ReportEndpoints
 
             return Results.Created($"/api/reports/{report.Id}", ReportDto.From(report));
         });
+
+        // RF-02a, RF-02b, RF-02c, RF-02d: listado global, solo administrador.
+        group.MapGet("/", async (AppDbContext db, int page = 1, int size = 20) =>
+        {
+            if (page < 1 || size < 1 || size > MaxPageSize)
+                return Results.BadRequest(new { error = $"page debe ser ≥ 1 y size entre 1 y {MaxPageSize}." });
+
+            var total = await db.Reports.CountAsync();
+            var items = await NewestFirst(db.Reports)
+                .Skip((page - 1) * size)
+                .Take(size)
+                .ToListAsync();
+            return Results.Ok(new PagedResult<ReportDto>(items.Select(ReportDto.From).ToList(), page, size, total));
+        }).RequireAuthorization(AuthSetup.AdminPolicy);
+
+        // RF-03: cada usuario ve solo los reportes que creó.
+        group.MapGet("/mine", async (ClaimsPrincipal principal, AppDbContext db) =>
+        {
+            var userId = principal.GetUserId();
+            var items = await NewestFirst(db.Reports.Where(r => r.CreatedById == userId)).ToListAsync();
+            return Results.Ok(items.Select(ReportDto.From));
+        });
     }
+
+    private static IQueryable<Report> NewestFirst(IQueryable<Report> reports) =>
+        reports.Include(r => r.CreatedBy).OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id);
 }

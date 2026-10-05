@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Riesgos.Api.Domain;
 
 namespace Riesgos.Api.Data;
@@ -7,6 +8,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Report> Reports => Set<Report>();
+
+    // SQLite no guarda el DateTimeKind: todas las fechas se guardan y se leen como UTC.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+    }
+
+    private class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
+        value => value.ToUniversalTime(),
+        value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
