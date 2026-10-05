@@ -72,4 +72,17 @@ public class ClassificationTests : IClassFixture<ApiFactory>
     {
         Assert.Equal(TimeSpan.FromSeconds(10), ClassificationService.DefaultTimeout);
     }
+
+    // AC-06 (RF-05, RF-06)
+    [Fact]
+    public async Task Si_la_sugerida_difiere_queda_la_automatica_y_se_guardan_ambas()
+    {
+        _factory.Classifier.Result = FakeClassifier.DefaultResult with { Category = Category.ProblemaInfraestructura };
+        var client = await _factory.CreateUserClient();
+
+        var report = await (await client.CreateReport(suggestedCategory: "UsoEpp")).ReadReport();
+
+        Assert.Equal(Category.ProblemaInfraestructura, report.Category);
+        Assert.Equal(Category.UsoEpp, report.SuggestedCategory);
+    }
 }
