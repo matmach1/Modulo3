@@ -22,6 +22,7 @@ public class ApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Default", _connectionString);
+        builder.UseSetting("JWT_KEY", "clave-de-pruebas-de-al-menos-32-caracteres");
     }
 
     protected override void Dispose(bool disposing)

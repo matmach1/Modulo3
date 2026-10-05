@@ -1,10 +1,13 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Riesgos.Api.Auth;
 using Riesgos.Api.Data;
 using Riesgos.Api.Domain;
 
 namespace Riesgos.Api.Endpoints;
 
 public record RegisterRequest(string? Email, string? Password);
+public record LoginRequest(string? Email, string? Password);
 
 public static class AuthEndpoints
 {
@@ -33,6 +36,28 @@ public static class AuthEndpoints
 
             return Results.Created($"/api/users/{user.Id}", new { user.Id, user.Email, Role = user.Role.ToString() });
         });
+
+        // RF-12
+        group.MapPost("/login", async (LoginRequest request, AppDbContext db, TokenService tokens) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+                return Results.Unauthorized();
+
+            var email = NormalizeEmail(request.Email);
+            var user = await db.Users.SingleOrDefaultAsync(u => u.Email == email);
+            if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                return Results.Unauthorized();
+
+            var token = tokens.CreateToken(user.Id, user.Email, user.Role);
+            return Results.Ok(new { token, user.Email, Role = user.Role.ToString() });
+        });
+
+        group.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new
+        {
+            Id = user.GetUserId(),
+            Email = user.FindFirstValue(ClaimTypes.Email),
+            Role = user.FindFirstValue(ClaimTypes.Role),
+        })).RequireAuthorization();
     }
 
     public static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
