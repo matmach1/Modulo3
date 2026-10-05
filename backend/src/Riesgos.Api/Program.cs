@@ -16,7 +16,9 @@ TokenService.SigningKey(app.Configuration);
 
 using (var scope = app.Services.CreateScope())
 {
-    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreated();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+    AdminSeeder.Seed(db, app.Configuration, app.Logger);
 }
 
 app.UseAuthentication();

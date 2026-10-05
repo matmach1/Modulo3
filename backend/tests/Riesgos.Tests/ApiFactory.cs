@@ -9,6 +9,9 @@ namespace Riesgos.Tests;
 /// </summary>
 public class ApiFactory : WebApplicationFactory<Program>
 {
+    public const string AdminEmail = "admin@test.com";
+    public const string AdminPassword = "admin-secreta";
+
     private readonly string _connectionString = $"Data Source=file:{Guid.NewGuid()}?mode=memory&cache=shared";
     private readonly SqliteConnection _keepAlive;
 
@@ -23,6 +26,8 @@ public class ApiFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting("ConnectionStrings:Default", _connectionString);
         builder.UseSetting("JWT_KEY", "clave-de-pruebas-de-al-menos-32-caracteres");
+        builder.UseSetting("ADMIN_EMAIL", AdminEmail);
+        builder.UseSetting("ADMIN_PASSWORD", AdminPassword);
     }
 
     protected override void Dispose(bool disposing)

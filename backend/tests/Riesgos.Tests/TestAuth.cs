@@ -34,4 +34,12 @@ public static class TestAuth
         client.UseToken(await client.Login(email));
         return client;
     }
+
+    /// <summary>Crea un cliente autenticado como el administrador del seed.</summary>
+    public static async Task<HttpClient> CreateAdminClient(this ApiFactory factory)
+    {
+        var client = factory.CreateClient();
+        client.UseToken(await client.Login(ApiFactory.AdminEmail, ApiFactory.AdminPassword));
+        return client;
+    }
 }
