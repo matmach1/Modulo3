@@ -11,7 +11,7 @@ El sistema reconoce exactamente dos roles:
 Los permisos de cada rol quedan definidos por los RF que los referencian explícitamente y se verifican mediante los AC de control de acceso (AC-03, AC-04, AC-16, AC-36, AC-37, AC-38, AC-39, AC-42).
 
 ## Objetivos
-Que todo riesgo laboral detectado por un empleado quede registrado en una base única, clasificado automáticamente por tipo y categoría, priorizado por criticidad y con trazabilidad completa (quién lo reportó, qué se hizo y quién lo cerró) hasta su cierre con una acción realizada.
+Que todo riesgo laboral detectado u observación realizada por un empleado quede registrado en una base única, clasificado automáticamente por tipo y categoría, priorizado por criticidad y con trazabilidad completa (quién lo reportó, qué se hizo y quién lo cerró) hasta su cierre con una acción realizada.
 
 La v1 no compromete métricas de éxito de producto (ver Fuera de Alcance).
 
