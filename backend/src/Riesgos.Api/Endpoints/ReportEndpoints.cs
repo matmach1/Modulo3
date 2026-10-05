@@ -81,6 +81,17 @@ public static class ReportEndpoints
             return Results.Ok(new PagedResult<ReportDto>(items.Select(ReportDto.From).ToList(), page, size, total));
         }).RequireAuthorization(AuthSetup.AdminPolicy);
 
+        // RF-31: el creador ve sus reportes; el administrador, cualquiera.
+        group.MapGet("/{id:int}", async (int id, ClaimsPrincipal principal, AppDbContext db) =>
+        {
+            var report = await db.Reports.Include(r => r.CreatedBy).SingleOrDefaultAsync(r => r.Id == id);
+            if (report is null)
+                return Results.NotFound();
+            if (!CanView(principal, report))
+                return Results.Forbid();
+            return Results.Ok(ReportDto.From(report));
+        });
+
         // RF-03: cada usuario ve solo los reportes que creó.
         group.MapGet("/mine", async (ClaimsPrincipal principal, AppDbContext db) =>
         {
@@ -89,6 +100,9 @@ public static class ReportEndpoints
             return Results.Ok(items.Select(ReportDto.From));
         });
     }
+
+    private static bool CanView(ClaimsPrincipal principal, Report report) =>
+        principal.IsInRole(nameof(Role.Admin)) || report.CreatedById == principal.GetUserId();
 
     private static IQueryable<Report> NewestFirst(IQueryable<Report> reports) =>
         reports.Include(r => r.CreatedBy).OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id);
