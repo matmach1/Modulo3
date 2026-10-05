@@ -19,12 +19,14 @@ public record ReportDto(
     Criticality Criticality,
     ReportStatus Status,
     DateTime CreatedAt,
-    string CreatedBy)
+    string CreatedBy,
+    string? Recommendation)
 {
     public static ReportDto From(Report r) => new(
         r.Id, r.Description, r.Location, r.SuggestedCategory,
         r.Type, r.Category, r.Criticality, r.Status,
-        r.CreatedAt, r.CreatedBy.Email);
+        r.CreatedAt, r.CreatedBy.Email,
+        Recommendations.For(r.Criticality));
 }
 
 public static class ReportEndpoints
