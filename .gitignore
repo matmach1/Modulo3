@@ -1,0 +1,16 @@
+# .NET
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+backend/src/Riesgos.Api/uploads/
+
+# Node
+node_modules/
+dist/
+
+# Entorno
+.env
+.env.*
+!.env.example

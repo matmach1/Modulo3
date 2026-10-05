@@ -15,7 +15,7 @@ Aplicación web donde empleados reportan actos/condiciones inseguras, casi accid
 Backend (desde `backend/`):
 ```
 dotnet restore
-dotnet run
+dotnet run --project src/Riesgos.Api
 dotnet test
 ```
 
